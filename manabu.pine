@@ -1,0 +1,38 @@
+//@version=3
+strategy("ChannelBreakOutStrategy", overlay=true)
+
+entryLength = input(title="Entry Length", type=integer, minval=1, maxval=1000, defval=10)
+exitLength = input(title="Exit Length", type=integer, minval=1, maxval=1000, defval=8)
+rangeTerm = input(title="Range Term", type=integer, minval=1, maxval=1000, defval=5)
+rangeTh = input(title="Range Threshold", type=float, minval=0, maxval=100000, defval=10000)
+
+entryUpBound = highest(high[1], entryLength)
+entryDownBound = lowest(low[1], entryLength)
+rangeUpBound = lowest(low[1], rangeTerm) + rangeTh
+rangeDownBound = highest(high[1], rangeTerm) - rangeTh
+longEntryCondition = high > entryUpBound and high > rangeUpBound
+shortEntryCondition = low < entryDownBound and low < rangeDownBound
+
+exitUpBound = highest(high[1], exitLength)
+exitDownBound = lowest(low[1], exitLength)
+longExitCondition = low < exitDownBound
+shortExitCondition = high > exitUpBound
+
+if (not na(close[entryLength]))
+    if longEntryCondition
+        entryPrice = max(entryUpBound, rangeUpBound)
+        strategy.entry("ChBrkLEntry", strategy.long, stop=entryPrice + syminfo.mintick, comment="ChBrkLEntry")
+    if shortEntryCondition
+        entryPrice = min(entryDownBound, rangeDownBound)
+        strategy.entry("ChBrkSEntry", strategy.short, stop=entryPrice - syminfo.mintick, comment="ChBrkSEntry")
+    if longExitCondition
+        strategy.exit("ChBrkLExit", "ChBrkLEntry", stop=exitDownBound - syminfo.mintick, comment="ChBrkLExit")
+    if shortExitCondition
+        strategy.exit("ChBrkSExit", "ChBrkSEntry", stop=exitUpBound + syminfo.mintick, comment="ChBrkSExit")
+
+//plot(strategy.equity, title="equity", color=red, linewidth=2, style=areabr)
+plot(entryUpBound, title="Entry Up Bound", color=blue)
+plot(entryDownBound, title="Entry Down Bound", color=red)
+pltRangeUpBound = plot(rangeUpBound, title="Range Up Bound")
+pltRangeDownBound = plot(rangeDownBound, title="Range Down Bound")
+fill(pltRangeUpBound, pltRangeDownBound, color=gray, title="Range Band")
